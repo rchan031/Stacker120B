@@ -48,53 +48,45 @@ void TimerSet(unsigned long M){
 	_avr_timer_cntcurr = _avr_timer_M;
 }
 
-enum States {sm1_display} state;
+enum States {wait, increment} state;
+unsigned char leftFlag = 0x00;
 
 void tickFct() {
-	static unsigned char column_val = 0x80;
-	static unsigned char column_sel = 0xE3;
-	unsigned char temp = column_val;
+	static unsigned char column_val = 0x80; //vertical
+	static unsigned char column_sel = 0x1F; //horizontal
+	static unsigned char block = 0x00;
 	switch(state) {
-		case sm1_display:
+		case wait:
+			if((~PIND & 0x01) == 0x01) {
+				state = increment;
+			}
 			break;
-		default:
-			state = sm1_display;
+		case increment:
+			state = wait;
 			break;
 	}
 	switch(state) {
-		case sm1_display:
-			/*
-			if((~PIND & 0x01) && column_val == 0x80) {
-				column_val = column_val + 0x40;
+		case wait:
+			if(column_sel == 0xF8) {
+				leftFlag = 0x01;
 			}
-			else if((~PIND & 0x01) && column_val == 0xC0) {
-				column_val = column_val + 0x20;
+			else if(column_sel == 0x1F) {
+				leftFlag = 0x00;
 			}
-			else if((~PIND & 0x01) && column_val == 0xE0) {
-				column_val = column_val + 0x10;
+			
+			if(leftFlag == 0x00) {
+				column_sel = (column_sel >> 1) | 0x80;
 			}
-			else if((~PIND & 0x01) && column_val == 0xF0) {
-				column_val = column_val + 0x08;
-			}
-			else if((~PIND & 0x01) && column_val == 0xF8) {
-				column_val = column_val + 0x04;
-			}
-			else if((~PIND & 0x01) && column_val == 0xFC) {
-				column_val = column_val + 0x02;
-			}
-			else if((~PIND & 0x01) && column_val == 0xFE) {
-				column_val = column_val + 0x01;
-			}
-			else if((~PIND & 0x01) && column_val == 0xFF) {
-				column_val = 0x80;
-			}
-			*/
-			if((~PIND & 0x01) == 0x01) {
-				column_val = column_val + (temp >> 1);
-				temp = (temp >> 1);
+			else if(leftFlag == 0x01) {
+				column_sel = (column_sel << 1) | 0x01;
 			}
 			break;
+		case increment:
+			block = column_sel;
+			column_val = (column_val >> 1);
+			break;
 		default:
+			state = wait;
 			break;
 	}
 	PORTA = column_val;
@@ -108,7 +100,7 @@ int main(void) {
 	DDRD = 0x00; PORTD = 0xFF;
 	
 	
-	TimerSet(100);
+	TimerSet(350);
 	TimerOn();
 	
     while (1) {
