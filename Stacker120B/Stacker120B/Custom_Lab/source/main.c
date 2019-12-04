@@ -251,10 +251,12 @@ int main(void) {
 	
     while (game) {
 		if(firstFlag == 0x01) {
-			if(stringCounter >= 4000) {
+			if(stringCounter >= 3500) {
 				firstFlag = 0x00;
 				LCD_ClearScreen();
 				LCD_DisplayString(1, "Score: ");
+				LCD_Cursor(8);
+				LCD_WriteData(48);
 			}
 			else {
 				++stringCounter;
